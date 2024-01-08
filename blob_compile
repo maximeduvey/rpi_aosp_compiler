@@ -1,0 +1,28 @@
+# pour pouvoir ouvrir un terminal : modifiter le etc/default/local	
+# pour rajouter .UTF-8
+
+#rajouter le user dans sudoers
+
+
+# Pour ajouter le partage du clipboard
+sudo apt-get remove virtualbox-guest-x11
+sudo apt-get install virtualbox-guest-x11
+sudo /usr/bin/VBoxClient --clipboard
+
+
+# building an aosp: https://grapeup.com/blog/android-automotive-os-on-raspberry-pi-4b/
+sudo apt update && sudo apt install gcc-aarch64-linux-gnu libssl-dev bc python3-setuptools repo python-is-python3 libncurses5 zip unzip make gcc flex bison -y
+
+mkdir android-11.0.0_r48 && cd android-11.0.0_r48
+repo init -u https://android.googlesource.com/platform/manifest -b android-11.0.0_r48 --partial-clone --clone-filter=blob:limit=10M
+git clone https://github.com/android-rpi/local_manifests .repo/local_manifests -b arpi-11
+repo sync
+
+# APPLY the Patch near this doc
+
+cd kernel/arpi
+ARCH=arm64 scripts/kconfig/merge_config.sh arch/arm64/configs/bcm2711_defconfig kernel/configs/android-base.config kernel/configs/android-recommended.config
+ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- make Image.gz
+ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- DTC_FLAGS="-@" make broadcom/bcm2711-rpi-4-b.dtb
+ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- DTC_FLAGS="-@" make overlays/vc4-kms-v3d-pi4.dtbo
+cd ../..
